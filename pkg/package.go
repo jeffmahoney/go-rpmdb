@@ -19,6 +19,8 @@ type PackageInfo struct {
 	SourceRpm       string
 	Group		string
 	Size            int
+	InstallTime	time.Time
+	BuildTime	time.Time
 	License         string
 	Vendor          string
 	Distribution	string
@@ -114,6 +116,12 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 			pkgInfo.FileSizes, err = ie.ParseInt32Array()
 		case RPMTAG_FILEFLAGS:
 			pkgInfo.FileFlags, err = ie.ParseInt32Array()
+
+		// Timestamps (either 32- or 64-bit)
+		case RPMTAG_INSTALLTIME:
+			pkgInfo.InstallTime, err = parseTime(ie)
+		case RPMTAG_BUILDTIME:
+			pkgInfo.BuildTime, err = parseTime(ie)
 
 		// Special handling
 		case RPMTAG_EPOCH:
@@ -260,6 +268,25 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 			     pubKeyAlgo, hashAlgo, pkgDate, keyId)
 
 	return result, nil
+}
+
+func parseTime(ie indexEntry) (time.Time, error) {
+	if ie.Info.Type == RPM_INT32_TYPE {
+		ts, err := ie.ParseInt32()
+		if err != nil {
+			return time.Time{}, xerrors.Errorf("failed to parse time field: %w", err)
+		}
+		return time.Unix(int64(ts), 0), nil
+	} else if ie.Info.Type == RPM_INT64_TYPE {
+		ts, err := ie.ParseInt64()
+		if err != nil {
+			return time.Time{}, xerrors.Errorf("failed to parse time field: %w", err)
+		}
+		return time.Unix(int64(ts), 0), nil
+	}
+
+	return time.Time{}, xerrors.Errorf("invalid tag type for timestamp field: %v",
+					   ie.Info.TypeName())
 }
 
 func (p *PackageInfo) InstalledFileNames() ([]string, error) {

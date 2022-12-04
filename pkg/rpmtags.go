@@ -19,6 +19,8 @@ const (
 	RPMTAG_EPOCH          = 1003 /* i */
 	RPMTAG_SUMMARY        = 1004 /* s */
 	RPMTAG_DESCRIPTION    = 1005 /* s{} */
+	RPMTAG_BUILDTIME      = 1006 /* i */
+	RPMTAG_INSTALLTIME    = 1008 /* i */
 	RPMTAG_SIZE           = 1009 /* i */
 	RPMTAG_DISTRIBUTION   = 1010 /* s */
 	RPMTAG_VENDOR         = 1011 /* s */
