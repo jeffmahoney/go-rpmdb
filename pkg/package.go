@@ -17,10 +17,14 @@ type PackageInfo struct {
 	Release         string
 	Arch            string
 	SourceRpm       string
+	Group		string
 	Size            int
 	License         string
 	Vendor          string
+	Distribution	string
 	Modularitylabel string
+	Description	string
+	Url		string
 	Summary         string
 	PGP             string
 	DigestAlgorithm DigestAlgorithm
@@ -68,10 +72,18 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 			pkgInfo.License, err = ie.ParseString()
 		case RPMTAG_VENDOR:
 			pkgInfo.Vendor, err = ie.ParseString()
+		case RPMTAG_DISTRIBUTION:
+			pkgInfo.Distribution, err = ie.ParseString()
+		case RPMTAG_URL:
+			pkgInfo.Url, err = ie.ParseString()
 
 		// RPM_I18NSTRING_TYPE
 		case RPMTAG_SUMMARY:
 			pkgInfo.Summary, err = ie.ParseI18nString()
+		case RPMTAG_DESCRIPTION:
+			pkgInfo.Description, err = ie.ParseI18nString()
+		case RPMTAG_GROUP:
+			pkgInfo.Group, err = ie.ParseI18nString()
 
 		// RPM_STRING_ARRAY_TYPE
 		case RPMTAG_DIRNAMES:
