@@ -10,6 +10,18 @@ import (
 	"golang.org/x/xerrors"
 )
 
+type PGPInfo struct {
+       PubKeyAlgorithm string
+       HashAlgorithm   string
+       Date            string
+       KeyID           [8]byte
+}
+
+func (info *PGPInfo) String() string {
+       return fmt.Sprintf("%s/%s, %s, Key ID %x", info.PubKeyAlgorithm,
+                          info.HashAlgorithm, info.Date, info.KeyID)
+}
+
 type PackageInfo struct {
 	Epoch           *int
 	Name            string
@@ -29,6 +41,7 @@ type PackageInfo struct {
 	Url		string
 	Summary         string
 	PGP             string
+	PGPInfo		*PGPInfo
 	DigestAlgorithm DigestAlgorithm
 	BaseNames       []string
 	DirIndexes      []int32
@@ -144,7 +157,12 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 
 			pkgInfo.DigestAlgorithm = DigestAlgorithm(digestAlgorithm)
 		case RPMTAG_PGP:
-			pkgInfo.PGP, err = parsePGPSignature(ie)
+			pkgInfo.PGPInfo, err = parsePGPSignature(ie)
+			if err != nil {
+				break
+			}
+
+			pkgInfo.PGP = pkgInfo.PGPInfo.String()
 		}
 
 		if err != nil {
@@ -156,7 +174,7 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 	return pkgInfo, nil
 }
 
-func parsePGPSignature(ie indexEntry) (string, error) {
+func parsePGPSignature(ie indexEntry) (*PGPInfo, error) {
 	type pgpSig struct {
 		_          [3]byte
 		Date       int32
@@ -194,22 +212,22 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 	}
 
 	if ie.Info.Type != RPM_BIN_TYPE {
-		return "", xerrors.New("invalid PGP signature")
+		return nil, xerrors.New("invalid PGP signature")
 	}
 
 	var tag, signatureType, version uint8
 	r := bytes.NewReader(ie.Data)
 	err := binary.Read(r, binary.BigEndian, &tag)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	err = binary.Read(r, binary.BigEndian, &signatureType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	err = binary.Read(r, binary.BigEndian, &version)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var pubKeyAlgo, hashAlgo, pkgDate string
@@ -222,7 +240,7 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 			sig := textSig{}
 			err = binary.Read(r, binary.BigEndian, &sig)
 			if err != nil {
-				return "", xerrors.Errorf("invalid PGP signature on decode: %w", err)
+				return nil, xerrors.Errorf("invalid PGP signature on decode: %w", err)
 			}
 			pubKeyAlgo = pubKeyLookup[sig.PubKeyAlgo]
 			hashAlgo = hashLookup[sig.HashAlgo]
@@ -232,7 +250,7 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 			sig := pgpSig{}
 			err = binary.Read(r, binary.BigEndian, &sig)
 			if err != nil {
-				return "", xerrors.Errorf("invalid PGP signature on decode: %w", err)
+				return nil, xerrors.Errorf("invalid PGP signature on decode: %w", err)
 			}
 			pubKeyAlgo = pubKeyLookup[sig.PubKeyAlgo]
 			hashAlgo = hashLookup[sig.HashAlgo]
@@ -245,7 +263,7 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 			sig := pgp4Sig{}
 			err = binary.Read(r, binary.BigEndian, &sig)
 			if err != nil {
-				return "", xerrors.Errorf("invalid PGP signature on decode: %w", err)
+				return nil, xerrors.Errorf("invalid PGP signature on decode: %w", err)
 			}
 			pubKeyAlgo = pubKeyLookup[sig.PubKeyAlgo]
 			hashAlgo = hashLookup[sig.HashAlgo]
@@ -255,7 +273,7 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 			sig := pgpSig{}
 			err = binary.Read(r, binary.BigEndian, &sig)
 			if err != nil {
-				return "", xerrors.Errorf("invalid PGP signature on decode: %w", err)
+				return nil, xerrors.Errorf("invalid PGP signature on decode: %w", err)
 			}
 			pubKeyAlgo = pubKeyLookup[sig.PubKeyAlgo]
 			hashAlgo = hashLookup[sig.HashAlgo]
@@ -264,10 +282,10 @@ func parsePGPSignature(ie indexEntry) (string, error) {
 		}
 	}
 
-	result := fmt.Sprintf("%s/%s, %s, Key ID %x",
-			     pubKeyAlgo, hashAlgo, pkgDate, keyId)
+	PGP := &PGPInfo{PubKeyAlgorithm: pubKeyAlgo, HashAlgorithm: hashAlgo,
+			Date: pkgDate, KeyID: keyId}
 
-	return result, nil
+	return PGP, nil
 }
 
 func parseTime(ie indexEntry) (time.Time, error) {
