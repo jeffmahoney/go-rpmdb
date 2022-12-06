@@ -1,9 +1,10 @@
-module github.com/knqyf263/go-rpmdb
+module github.com/jeffmahoney/go-rpmdb
 
 go 1.18
 
 require (
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/knqyf263/go-rpmdb v0.0.0-20221030135625-4082a22221ce
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
