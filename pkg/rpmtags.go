@@ -72,7 +72,7 @@ type Tag struct {
 	Value	interface{}
 }
 
-func tagName(tag int32) string {
+func TagName(tag int32) string {
 	tagname, ok := tagIdToNameMap[tag]
 	if !ok {
 		tagname = fmt.Sprintf("tag#%v", tag)
@@ -80,7 +80,7 @@ func tagName(tag int32) string {
 	return tagname
 }
 
-func typeName(typeid int32) string {
+func TypeName(typeid int32) string {
 	typename, ok := typeNames[typeid]
 	if !ok {
 		typename = fmt.Sprintf("type#%v", typeid)
@@ -92,12 +92,12 @@ func typeName(typeid int32) string {
 func (pkg *PackageInfoMap) GetStringTag(tagid int32) (string, error) {
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return "", fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return "", fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 	value, ok := tag.Value.(string)
 	if !ok {
-		return "", fmt.Errorf("Expected string value for tag \"%s\"", tagName(tagid))
+		return "", fmt.Errorf("Expected string value for tag \"%s\"", TagName(tagid))
 	}
 
 	return value, nil
@@ -106,12 +106,12 @@ func (pkg *PackageInfoMap) GetStringTag(tagid int32) (string, error) {
 func (pkg *PackageInfoMap) GetStringArrayTag(tagid int32) ([]string, error) {
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return nil, fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 	value, ok := tag.Value.([]string)
 	if !ok {
-		return nil, fmt.Errorf("Expected string value for tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Expected string value for tag \"%s\"", TagName(tagid))
 	}
 
 	return value, nil
@@ -120,7 +120,7 @@ func (pkg *PackageInfoMap) GetStringArrayTag(tagid int32) ([]string, error) {
 func (pkg *PackageInfoMap) GetIntTag(tagid int32) (int, error) {
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return 0, fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return 0, fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 	switch v := tag.Value.(type) {
@@ -135,14 +135,14 @@ func (pkg *PackageInfoMap) GetIntTag(tagid int32) (int, error) {
 	case uint64:
 		return int(v), nil
 	default:
-		return 0, fmt.Errorf("Expected integer value for tag \"%s\"", tagName(tagid))
+		return 0, fmt.Errorf("Expected integer value for tag \"%s\"", TagName(tagid))
 	}
 }
 
 func (pkg *PackageInfoMap) GetIntArrayTag(tagid int32) ([]int, error) {
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return nil, fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 
@@ -183,19 +183,19 @@ func (pkg *PackageInfoMap) GetIntArrayTag(tagid int32) ([]int, error) {
 
 		return ret, nil
 	default:
-		return nil, fmt.Errorf("Expected integer array value for tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Expected integer array value for tag \"%s\"", TagName(tagid))
 	}
 }
 
 func (pkg *PackageInfoMap) GetTimeTag(tagid int32) (time.Time, error) {
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return time.Time{}, fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return time.Time{}, fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 	value, ok := tag.Value.(time.Time)
 	if !ok {
-		return time.Time{}, fmt.Errorf("Expected time value for tag \"%s\"", tagName(tagid))
+		return time.Time{}, fmt.Errorf("Expected time value for tag \"%s\"", TagName(tagid))
 	}
 
 	return value, nil
@@ -311,12 +311,12 @@ func (pkg *PackageInfoMap) PGP() (*PGPInfo, error) {
 
 	tag, ok := pkg.Tags[tagid]
 	if !ok {
-		return nil, fmt.Errorf("Package has no tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Package has no tag \"%s\"", TagName(tagid))
 	}
 
 	value, ok := tag.Value.(*PGPInfo)
 	if !ok {
-		return nil, fmt.Errorf("Expected *PGPInfo value for tag \"%s\"", tagName(tagid))
+		return nil, fmt.Errorf("Expected *PGPInfo value for tag \"%s\"", TagName(tagid))
 	}
 
 	return value, nil

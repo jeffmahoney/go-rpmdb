@@ -69,11 +69,11 @@ type entryInfo struct {
 }
 
 func (ei entryInfo) TagName() string {
-	return tagName(ei.Tag)
+	return TagName(ei.Tag)
 }
 
 func (ei entryInfo) TypeName() string {
-	return typeName(ei.Tag)
+	return TypeName(ei.Tag)
 }
 
 // ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/header.c#L88-L94
