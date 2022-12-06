@@ -64,6 +64,12 @@ const (
 	RPM_MAX_TYPE          = 9
 )
 
+type Tag struct {
+	Type	uint32
+	Id	int32
+	Value	interface{}
+}
+
 func tagName(tag int32) string {
 	tagname, ok := tagIdToNameMap[tag]
 	if !ok {

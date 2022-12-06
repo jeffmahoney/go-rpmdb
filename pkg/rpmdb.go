@@ -68,7 +68,7 @@ func (d *RpmDB) ListPackages() ([]*PackageInfo, error) {
 		if err != nil {
 			return nil, xerrors.Errorf("error during importing header: %w", err)
 		}
-		pkg, err := getNEVRA(indexEntries)
+		pkg, err := getNEVRAAsPackageInfo(indexEntries)
 		if err != nil {
 			return nil, xerrors.Errorf("invalid package info: %w", err)
 		}
@@ -76,4 +76,29 @@ func (d *RpmDB) ListPackages() ([]*PackageInfo, error) {
 	}
 
 	return pkgList, nil
+
+
+}
+
+func (d *RpmDB) ListPackagesAsPackageInfoMap(tags []string) ([]*PackageInfoMap, error) {
+	var pkgList []*PackageInfoMap
+
+	for entry := range d.db.Read() {
+		if entry.Err != nil {
+			return nil, entry.Err
+		}
+
+		indexEntries, err := headerImport(entry.Value)
+		if err != nil {
+			return nil, xerrors.Errorf("error during importing header: %w", err)
+		}
+		pkg, err := getNEVRAAsPackageInfoMap(indexEntries, tags)
+		if err != nil {
+			return nil, xerrors.Errorf("invalid package info: %w", err)
+		}
+		pkgList = append(pkgList, pkg)
+	}
+
+	return pkgList, nil
+
 }

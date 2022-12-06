@@ -5,9 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
+	"golang.org/x/tools/container/intsets"
 )
 
 type PGPInfo struct {
@@ -54,6 +56,10 @@ type PackageInfo struct {
 	GroupNames      []string
 }
 
+type PackageInfoMap struct {
+	Tags	map[int32]Tag
+}
+
 type FileInfo struct {
 	Path      string
 	Mode      uint16
@@ -65,7 +71,7 @@ type FileInfo struct {
 }
 
 // ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/tagexts.c#L752
-func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
+func getNEVRAAsPackageInfo(indexEntries []indexEntry) (*PackageInfo, error) {
 	pkgInfo := &PackageInfo{}
 	for _, ie := range indexEntries {
 		var err error
@@ -169,6 +175,115 @@ func getNEVRA(indexEntries []indexEntry) (*PackageInfo, error) {
 			return nil, xerrors.Errorf("error while parsing %v: %w",
 						   ie.Info.TagName(), err)
 		}
+	}
+
+	return pkgInfo, nil
+}
+
+func getNEVRAAsPackageInfoMap(indexEntries []indexEntry, tags []string) (*PackageInfoMap, error) {
+	pkgInfo := &PackageInfoMap{ Tags: map[int32]Tag{} }
+
+	tagSet := &intsets.Sparse{}
+
+	if len(tags) > 0 {
+		for _, tag := range tags {
+			tag = strings.ToUpper(tag)
+			id, ok := tagNameToIdMap[tag]
+			if !ok {
+				return nil, xerrors.Errorf("Unknown tag %s", tag)
+			}
+
+			_ = tagSet.Insert(int(id))
+		}
+	}
+	for _, ie := range indexEntries {
+		var err error
+
+		if !tagSet.IsEmpty() && !tagSet.Has(int(ie.Info.Tag)) {
+			continue
+		}
+
+		tag := Tag{ Type: ie.Info.Type, Id: ie.Info.Tag, }
+
+		switch ie.Info.Tag {
+		// RPM_STRING_TYPE
+		case RPMTAG_MODULARITYLABEL,
+		     RPMTAG_NAME,
+		     RPMTAG_VERSION,
+		     RPMTAG_RELEASE,
+		     RPMTAG_ARCH,
+		     RPMTAG_SOURCERPM,
+		     RPMTAG_LICENSE,
+		     RPMTAG_VENDOR,
+		     RPMTAG_DISTRIBUTION,
+		     RPMTAG_URL:
+			tag.Value, err = ie.ParseString()
+
+		// RPM_I18NSTRING_TYPE
+		case RPMTAG_SUMMARY,
+		     RPMTAG_DESCRIPTION,
+		     RPMTAG_GROUP:
+			tag.Value, err = ie.ParseI18nString()
+
+		// RPM_STRING_ARRAY_TYPE
+		case RPMTAG_DIRNAMES,
+		     RPMTAG_BASENAMES,
+		     RPMTAG_FILEDIGESTS,
+		     RPMTAG_FILEUSERNAME,
+		     RPMTAG_FILEGROUPNAME:
+			tag.Value, err = ie.ParseStringArray()
+
+		// note: there is no distinction between int16, uint16, and []uint16
+		// RPM_INT16_TYPE (array variant)
+		case RPMTAG_FILEMODES:
+			tag.Value, err = ie.ParseUint16Array()
+
+		// note: there is no distinction between int32, uint32, and []uint32
+		// RPM_INT32_TYPE (scalar variant)
+		case RPMTAG_SIZE:
+			tag.Value, err = ie.ParseInt32()
+
+		// RPM_INT32_TYPE (array variant)
+		case RPMTAG_DIRINDEXES,
+		     RPMTAG_FILESIZES,
+		     RPMTAG_FILEFLAGS:
+			tag.Value, err = ie.ParseInt32Array()
+
+		// Timestamps (either 32- or 64-bit)
+		case RPMTAG_INSTALLTIME,
+		     RPMTAG_BUILDTIME:
+			tag.Value, err = parseTime(ie)
+
+		// Special handling
+		case RPMTAG_EPOCH:
+			if ie.Data != nil {
+				value, err := ie.ParseInt32()
+				if err != nil {
+					break
+				}
+				tag.Value = value
+			}
+		case RPMTAG_FILEDIGESTALGO:
+			// note: all digests within a package entry only supports a single
+			// digest algorithm (there may be future support for algorithm noted for
+			// each file entry, but currently unimplemented:
+			// https://github.com/rpm-software-management/rpm/blob/0b75075a8d006c8f792d33a57eae7da6b66a4591/lib/rpmtag.h#L256)
+			digestAlgorithm, err := ie.ParseInt32()
+			if err != nil {
+				break
+			}
+
+			tag.Value = DigestAlgorithm(digestAlgorithm)
+		case RPMTAG_PGP:
+			tag.Value, err = parsePGPSignature(ie)
+		}
+
+		if err != nil {
+			return nil, xerrors.Errorf("error while parsing %v: %w",
+						   ie.Info.TagName(), err)
+		}
+
+		pkgInfo.Tags[tag.Id] = tag
 	}
 
 	return pkgInfo, nil
