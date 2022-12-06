@@ -1,6 +1,10 @@
 package rpmdb
 //go:generate bash tagnames.sh rpmtagnames.go
 
+import (
+	"fmt"
+)
+
 const (
 	// ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/rpmtag.h#L34
 	RPMTAG_HEADERIMAGE      = 61
@@ -59,3 +63,20 @@ const (
 	RPM_I18NSTRING_TYPE   = 9
 	RPM_MAX_TYPE          = 9
 )
+
+func tagName(tag int32) string {
+	tagname, ok := tagIdToNameMap[tag]
+	if !ok {
+		tagname = fmt.Sprintf("tag#%v", tag)
+	}
+	return tagname
+}
+
+func typeName(typeid int32) string {
+	typename, ok := typeNames[typeid]
+	if !ok {
+		typename = fmt.Sprintf("type#%v", typeid)
+	}
+
+	return typename
+}

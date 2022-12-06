@@ -3,7 +3,6 @@ package rpmdb
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"strings"
 	"unsafe"
@@ -70,21 +69,11 @@ type entryInfo struct {
 }
 
 func (ei entryInfo) TagName() string {
-	tagname, ok := tagNames[ei.Tag]
-	if !ok {
-		tagname = fmt.Sprintf("tag#%v", ei.Tag)
-	}
-
-	return tagname
+	return tagName(ei.Tag)
 }
 
 func (ei entryInfo) TypeName() string {
-	typename, ok := typeNames[ei.Tag]
-	if !ok {
-		typename = fmt.Sprintf("type#%v", ei.Tag)
-	}
-
-	return typename
+	return typeName(ei.Tag)
 }
 
 // ref. https://github.com/rpm-software-management/rpm/blob/rpm-4.14.3-release/lib/header.c#L88-L94
