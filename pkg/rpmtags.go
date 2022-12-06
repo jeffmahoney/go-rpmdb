@@ -80,6 +80,14 @@ func TagName(tag int32) string {
 	return tagname
 }
 
+func TagID(tagname string) (int32, error) {
+	tagid, ok := tagNameToIdMap[tagname]
+	if !ok {
+		return -1, fmt.Errorf("Tag %v has no matching ID", tagname)
+	}
+	return tagid, nil
+}
+
 func TypeName(typeid int32) string {
 	typename, ok := typeNames[typeid]
 	if !ok {
