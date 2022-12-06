@@ -409,13 +409,13 @@ func parseTime(ie indexEntry) (time.Time, error) {
 		if err != nil {
 			return time.Time{}, xerrors.Errorf("failed to parse time field: %w", err)
 		}
-		return time.Unix(int64(ts), 0), nil
+		return time.Unix(int64(ts), 0).UTC(), nil
 	} else if ie.Info.Type == RPM_INT64_TYPE {
 		ts, err := ie.ParseInt64()
 		if err != nil {
 			return time.Time{}, xerrors.Errorf("failed to parse time field: %w", err)
 		}
-		return time.Unix(int64(ts), 0), nil
+		return time.Unix(int64(ts), 0).UTC(), nil
 	}
 
 	return time.Time{}, xerrors.Errorf("invalid tag type for timestamp field: %v",
